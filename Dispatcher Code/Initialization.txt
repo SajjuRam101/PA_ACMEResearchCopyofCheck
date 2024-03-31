@@ -1,0 +1,61 @@
+BLOCK Initilization
+ON BLOCK ERROR
+    GOTO ErrorHandling
+END
+    SET Log TO $'''---------------------------------------------------------- Initilization'''
+    SET ExceptionScreenshot TO $'''%''%'''
+    Text.AppendLine Text: Log LineToAppend: $'''Started''' Result=> Log
+    System.GetEnvironmentVariable.GetEnvironmentVariable Name: $'''USERNAME''' Value=> HostName
+    System.GetEnvironmentVariable.GetEnvironmentVariable Name: $'''COMPUTERNAME''' Value=> MachineName
+    Text.AppendLine Text: Log LineToAppend: $'''Machine Name : %MachineName% Host Name : %HostName%''' Result=> Log
+    SET BOTDocumentsFolder TO $'''C:\\Users\\%HostName%\\Documents'''
+    SET BOTRootFolderName TO $'''PowerAutomate'''
+    SET BOTName TO $'''ACME Research Copy of Check'''
+    Text.AppendLine Text: Log LineToAppend: $'''BOT Root Folder : %BOTDocumentsFolder%\\%BOTRootFolderName%. Check if the folder is available or not''' Result=> Log
+    IF (Folder.IfFolderExists.DoesNotExist Path: $'''%BOTDocumentsFolder%\\%BOTRootFolderName%''') THEN
+        Text.AppendLine Text: Log LineToAppend: $'''BOT Root Folder : %BOTDocumentsFolder%\\%BOTRootFolderName% is not available, creating it.''' Result=> Log
+        Folder.Create FolderPath: BOTDocumentsFolder FolderName: BOTRootFolderName
+    END
+    Text.AppendLine Text: Log LineToAppend: $'''BOT Folder : %BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%. Check if the folder is available or not''' Result=> Log
+    IF (Folder.IfFolderExists.DoesNotExist Path: $'''%BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%''') THEN
+        Text.AppendLine Text: Log LineToAppend: $'''BOT Folder : %BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName% is not available, creating it.''' Result=> Log
+        Folder.Create FolderPath: $'''%BOTDocumentsFolder%\\%BOTRootFolderName%''' FolderName: BOTName
+    END
+    SET BOTLogFolder TO $'''%BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%\\Log'''
+    Text.AppendLine Text: Log LineToAppend: $'''BOT Log Folder : %BOTLogFolder%. Check if the folder is available or not''' Result=> Log
+    IF (Folder.IfFolderExists.DoesNotExist Path: BOTLogFolder) THEN
+        Text.AppendLine Text: Log LineToAppend: $'''BOT Log Folder : %BOTLogFolder% is not available, creating it.''' Result=> Log
+        Folder.Create FolderPath: $'''%BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%''' FolderName: $'''Log'''
+    END
+    SET ScreenshotsFolder TO $'''%BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%\\Screenshots'''
+    Text.AppendLine Text: Log LineToAppend: $'''Screenshots Folder : %ScreenshotsFolder%. Check if the folder is available or not''' Result=> Log
+    IF (Folder.IfFolderExists.DoesNotExist Path: ScreenshotsFolder) THEN
+        Text.AppendLine Text: Log LineToAppend: $'''Screenshots Folder : %ScreenshotsFolder% is not available, creating it.''' Result=> Log
+        Folder.Create FolderPath: $'''%BOTDocumentsFolder%\\%BOTRootFolderName%\\%BOTName%''' FolderName: $'''Screenshots'''
+    END
+    Text.AppendLine Text: Log LineToAppend: $'''Cleaning exception screenshots folder''' Result=> Log
+    File.Delete Files: ScreenshotFolderFiles
+    Folder.GetFiles Folder: ScreenshotsFolder FileFilter: $'''*''' IncludeSubfolders: False FailOnAccessDenied: True SortBy1: Folder.SortBy.NoSort SortDescending1: False SortBy2: Folder.SortBy.NoSort SortDescending2: False SortBy3: Folder.SortBy.NoSort SortDescending3: False Files=> ScreenshotFolderFiles
+    Text.AppendLine Text: Log LineToAppend: $'''BOT Log Folder : %BOTLogFolder% is available''' Result=> Log
+    DateTime.GetCurrentDateTime.Local DateTimeFormat: DateTime.DateTimeFormat.DateAndTime CurrentDateTime=> CurrentDateTime
+    Text.ConvertDateTimeToText.FromCustomDateTime DateTime: CurrentDateTime CustomFormat: $'''dd_MMM_yyyy''' Result=> FormattedCurrentDateTime
+    SET LogFilePath TO $'''%BOTLogFolder%\\BOTLog_%HostName%_%MachineName%_%FormattedCurrentDateTime%.txt'''
+    Text.AppendLine Text: Log LineToAppend: $'''Log File Path : %LogFilePath%''' Result=> Log
+    File.WriteText File: LogFilePath TextToWrite: $'''*******************************************************************************
+BOT Started at %CurrentDateTime%
+*******************************************************************************''' AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+    Text.AppendLine Text: Log LineToAppend: $'''Killing the Edge Browser''' Result=> Log
+    System.TerminateProcess.TerminateProcessByName ProcessName: $'''msedge'''
+    Text.AppendLine Text: Log LineToAppend: $'''Completed''' Result=> Log
+    File.WriteText File: LogFilePath TextToWrite: Log AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+END
+LABEL ErrorHandling
+ERROR => LastError Reset: True
+IF LastError <> $'''No Error''' THEN
+    SET SystemExceptionMessage TO $'''Error Sub Flow Name : %LastError.SubflowName%
+Error Action index : %LastError.ActionIndex%
+Error Actio Name : %LastError.ActionName%
+Error Location : %LastError.Location%
+Error Message : %LastError.Message%
+Error Details : %LastError.ErrorDetails%'''
+END

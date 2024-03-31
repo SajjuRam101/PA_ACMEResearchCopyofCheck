@@ -1,0 +1,57 @@
+CALL Initilization
+IF IsNotEmpty(SystemExceptionMessage) THEN
+    CALL SystemExceptionHandling
+    EXIT Code: 0 ErrorMessage: SystemExceptionMessage
+END
+CALL ACMESystem1Login
+IF IsNotEmpty(SystemExceptionMessage) THEN
+    CALL SystemExceptionHandling
+    EXIT Code: 0 ErrorMessage: SystemExceptionMessage
+END
+CALL ACMEFetchWorkItems
+IF IsNotEmpty(SystemExceptionMessage) THEN
+    CALL SystemExceptionHandling
+    EXIT Code: 0 ErrorMessage: SystemExceptionMessage
+END
+CALL AddWorkItemsToQueue
+IF IsNotEmpty(SystemExceptionMessage) THEN
+    CALL SystemExceptionHandling
+    EXIT Code: 0 ErrorMessage: SystemExceptionMessage
+END
+Text.ConvertDateTimeToText.FromDateTime DateTime: CurrentDateTime StandardFormat: Text.WellKnownDateTimeFormat.FullDateTimeLongTime Result=> FormattedCurrentDateTime
+@@'emailMessage/Sensitivity': ''
+@@connectionDisplayName: 'Cr51d68_shared_office365_dad5ce45'
+External.InvokeCloudConnector Connection: '3eea50ca-b96c-498b-8da0-bf3f01605163' ConnectorId: '/providers/Microsoft.PowerApps/apis/shared_office365' OperationId: 'SendEmailV2' @'emailMessage/To': EmailTo @'emailMessage/Subject': $'''%BOTName% | BOT Run Successful | %FormattedCurrentDateTime%''' @'emailMessage/Body': $'''Hi Team<br><br>
+
+<b>%BOTName%</b> successfuly ran and added the workitems of type <b>%ACMEWorkItemType%</b> to queue.<br><br>
+
+<b>Total number of workitems added :</b> %WorkItemIndex - 1%<br>
+<b> BOT log file path:</b> %LogFilePath%<bt><br><br>
+
+Thank & Regards<br>
+Digital Assistant.'''
+System.TerminateProcess.TerminateProcessByName ProcessName: $'''msedge'''
+EXIT Code: 0
+
+# [ControlRepository][PowerAutomateDesktop]
+
+{
+  "ControlRepositorySymbols": [],
+  "ImageRepositorySymbol": {
+    "Repository": "{\r\n  \"Folders\": [],\r\n  \"Images\": [],\r\n  \"Version\": 1\r\n}",
+    "ImportMetadata": {},
+    "Name": "imgrepo"
+  },
+  "ConnectionReferences": [
+    {
+      "ConnectorId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+      "DisplayName": "Cr51d68_shared_office365_dad5ce45",
+      "InternalId": "3eea50ca-b96c-498b-8da0-bf3f01605163",
+      "IsDisabled": false,
+      "LogicalName": "Cr51d68_shared_office365_dad5ce45f5fe4e8e96bd382ad109708b",
+      "IsEmbedded": false,
+      "ConnectionName": "shared-office365-1b1b3df6-4efd-4f06-8180-16af4c818359",
+      "ConnectionDisplayName": "karri.sivaram@Sajjuram.onmicrosoft.com"
+    }
+  ]
+}

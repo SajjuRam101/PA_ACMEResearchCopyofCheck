@@ -1,0 +1,39 @@
+BLOCK ACMEFetchWorkItems
+ON BLOCK ERROR
+GOTO ErrorHandling
+END
+    SET Log TO $'''---------------------------------------------------------- ACME Fetch Work Items'''
+    Text.AppendLine Text: Log LineToAppend: $'''Started''' Result=> Log
+    Text.AppendLine Text: Log LineToAppend: $'''Attaching the ACME Homepage''' Result=> Log
+    WebAutomation.LaunchEdge.AttachToEdgeByUrl TabUrl: ACMELoginURL AttachTimeout: 5 BrowserInstance=> Browser
+    Text.AppendLine Text: Log LineToAppend: $'''Navigate to work items by opening the work items URL''' Result=> Log
+    WebAutomation.GoToWebPage.GoToWebPage BrowserInstance: Browser Url: ACMEWorkItemsURL WaitForPageToLoadTimeout: 60
+    Text.AppendLine Text: Log LineToAppend: $'''Fetching the work items''' Result=> Log
+    WebAutomation.ExtractData.ExtractHtmlTableUsingPagingFromAllPages BrowserInstance: Browser Control: $'''html > body > div > div:eq(1) > div > table''' ExtractionParameters: {[$'''Actions''', $'''WIID''', $'''Description''', $'''Type''', $'''Status''', $'''Date'''], [$'''''', $'''''', $'''''', $'''''', $'''''', $''''''] } UsePhysicalClick: False PagerCssSelector: $''' > body > div > div > div > nav > ul > li > a[Text=\">\"]''' PostProcessData: False TimeoutInSeconds: 60 ExtractedData=> WorkItemsDataFromWebPage
+    Text.AppendLine Text: Log LineToAppend: $'''All work items fetched . Workitems Count : %WorkItemsDataFromWebPage.RowsCount%''' Result=> Log
+    IF WorkItemsDataFromWebPage.IsEmpty = $'''true''' THEN
+        WebAutomation.TakeScreenshot.TakeScreenshotSaveToFile BrowserInstance: Browser File: $'''%ScreenshotsFolder%\\ACMEFetchWorkItems.png''' FileFormat: WebAutomation.FileFormat.Png
+        SET ExceptionScreenshot TO $'''%ScreenshotsFolder%\\ACMEFetchWorkItems.png'''
+        SET SystemExceptionMessage TO $'''No workitems fetched from ACME system 1 web application.'''
+        GOTO 'End'
+    END
+    IF WorkItemsDataFromWebPage.RowsCount = 0 THEN
+        WebAutomation.TakeScreenshot.TakeScreenshotSaveToFile BrowserInstance: Browser File: $'''%ScreenshotsFolder%\\ACMEFetchWorkItems.png''' FileFormat: WebAutomation.FileFormat.Png
+        SET ExceptionScreenshot TO $'''%ScreenshotsFolder%\\ACMEFetchWorkItems.png'''
+        SET SystemExceptionMessage TO $'''No workitems fetched from ACME system 1 web application.'''
+        GOTO 'End'
+    END
+    LABEL 'End'
+    Text.AppendLine Text: Log LineToAppend: $'''Completed''' Result=> Log
+    File.WriteText File: LogFilePath TextToWrite: Log AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+END
+LABEL ErrorHandling
+ERROR => LastError Reset: True
+IF LastError <> $'''No Error''' THEN
+    SET SystemExceptionMessage TO $'''Error Sub Flow Name : %LastError.SubflowName%
+Error Action index : %LastError.ActionIndex%
+Error Actio Name : %LastError.ActionName%
+Error Location : %LastError.Location%
+Error Message : %LastError.Message%
+Error Details : %LastError.ErrorDetails%'''
+END

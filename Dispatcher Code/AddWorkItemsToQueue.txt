@@ -1,0 +1,43 @@
+BLOCK AddWorkItemsToQueue
+ON BLOCK ERROR
+GOTO ErrorHandling
+END
+    SET Log TO $'''---------------------------------------------------------- Add Work Items To Queue'''
+    Text.AppendLine Text: Log LineToAppend: $'''Started''' Result=> Log
+    SET RequiredWorkItemsAvailable TO $'''false'''
+    SET WorkItemIndex TO 1
+    Text.AppendLine Text: Log LineToAppend: $'''Loop through each row in workitems fetched from ACME system 1''' Result=> Log
+    LOOP FOREACH WorkItemDataRow IN WorkItemsDataFromWebPage
+        IF WorkItemDataRow['Status'] = $'''Open''' THEN
+            IF WorkItemDataRow['Type'] = ACMEWorkItemType THEN
+                SET RequiredWorkItemsAvailable TO $'''true'''
+                SET WorkItemActionsURL TO $'''https://acme-test.uipath.com/work-items/%WorkItemDataRow['wiid']%'''
+                SET WorkItemWIID TO WorkItemDataRow['wiid']
+                SET WorkItemDescription TO WorkItemDataRow['description']
+                SET WorkItemType TO WorkItemDataRow['type']
+                SET WorkItemStatus TO WorkItemDataRow['status']
+                SET WorkItemDate TO WorkItemDataRow['date']
+                Text.AppendLine Text: Log LineToAppend: $'''WorkItem %WorkItemIndex% : Adding work item %WorkItemWIID% to work queue''' Result=> Log
+                @@'InputSummaryValue:WORKQUEUE': 'ACMEQueue'
+WorkQueues.EnqueueWorkQueueItem.WithoutUniqueId WorkQueue: $'''2782fa68-fbee-ee11-a1fe-000d3a4e5790''' Status: WorkQueues.WorkQueueItemEnqueueStatus.Queued Priority: WorkQueues.WorkQueueItemPriority.Normal Name: WorkItemWIID Value: $'''%WorkItemWIID%|%WorkItemDescription%|%ACMEWorkItemType%|%WorkItemStatus%|%WorkItemDate%''' WorkQueueItem=> NewWorkQueueItem
+                Variables.IncreaseVariable Value: WorkItemIndex IncrementValue: 1
+            END
+        END
+    END
+    IF RequiredWorkItemsAvailable = $'''false''' THEN
+        SET SystemExceptionMessage TO $'''No workitems with type (%ACMEWorkItemType%) fetched from ACME system 1 web application.'''
+    END
+    Text.AppendLine Text: Log LineToAppend: $'''Total %WorkItemIndex - 1% number of workitems added to queue.''' Result=> Log
+    Text.AppendLine Text: Log LineToAppend: $'''Completed''' Result=> Log
+    File.WriteText File: LogFilePath TextToWrite: Log AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+END
+LABEL ErrorHandling
+ERROR => LastError Reset: True
+IF LastError <> $'''No Error''' THEN
+    SET SystemExceptionMessage TO $'''Error Sub Flow Name : %LastError.SubflowName%
+Error Action index : %LastError.ActionIndex%
+Error Actio Name : %LastError.ActionName%
+Error Location : %LastError.Location%
+Error Message : %LastError.Message%
+Error Details : %LastError.ErrorDetails%'''
+END
